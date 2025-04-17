@@ -58,3 +58,4 @@ venv.bak/
 
 # Logs
 *.log
+chat_history.json
