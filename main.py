@@ -33,7 +33,7 @@ def main():
     
     while True:
         query = input("Ваш запрос: ")
-        if query.lower() in ['выход', 'exit', 'quit']:
+        if query.lower() in ['выход', 'exit', 'quit', 'стоп', 'stop', 'хватит', 'конец', 'end', 'всё', 'enough', 'достаточно', 'bye', 'done']:
             break
             
         response = agent.run(query)
