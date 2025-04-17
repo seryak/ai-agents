@@ -139,7 +139,39 @@ def write_file(file_path: str, content: str, create_dirs: bool = False) -> str:
     except Exception as e:
         return f"Ошибка записи: {str(e)}"
 
+import json
+from pathlib import Path
 from pydantic import BaseModel, Field
+
+class ChatHistory:
+    """Класс для сохранения истории диалога"""
+    def __init__(self, file_path="chat_history.json"):
+        self.file_path = Path(file_path)
+        self.history = self._load_history()
+
+    def _load_history(self):
+        """Загружает историю из файла"""
+        if self.file_path.exists():
+            with open(self.file_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+
+    def save(self, query: str, response: str):
+        """Сохраняет новый диалог"""
+        self.history.append({
+            "timestamp": datetime.datetime.now().isoformat(),
+            "query": query,
+            "response": response
+        })
+        with open(self.file_path, 'w', encoding='utf-8') as f:
+            json.dump(self.history, f, indent=2, ensure_ascii=False)
+
+    def get_context(self, last_n=3):
+        """Возвращает последние N сообщений как контекст"""
+        return "\n".join(
+            f"User: {item['query']}\nAI: {item['response']}"
+            for item in self.history[-last_n:]
+        )
 
 class CommandInput(BaseModel):
     command: str = Field(description="Команда для выполнения")
@@ -215,13 +247,23 @@ if __name__ == "__main__":
     print("🤖 ИИ-агент с deepseek готов к работе!")
     print("Введите 'выход' для завершения\n")
     
+    chat_history = ChatHistory()
+    
     while True:
         query = input("Ваш запрос: ")
         if is_stop_command(query):
             break
             
         try:
+            # Добавляем контекст из истории
+            context = chat_history.get_context()
+            if context:
+                query = f"Контекст предыдущего общения:\n{context}\n\nНовый запрос: {query}"
+            
             response = agent.run(query)
             print(f"\nОтвет агента: {response}\n")
+            
+            # Сохраняем в историю
+            chat_history.save(query, response)
         except Exception as e:
             print(f"Ошибка: {e}")
